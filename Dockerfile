@@ -1,42 +1,15 @@
-# Layer 1
-FROM node:lts-alpine AS builder
+FROM node:16
+
+# Set the working directory inside the container
 WORKDIR /app
-COPY ./app/package*.json ./
-RUN npm install
-COPY ./app/ ./
-RUN npm run build 
-# in the end I have the /dist
+# Copy all files into the container
+COPY . .
 
-# Layer 2
-FROM debian:bookworm-slim
-
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y \
-    nginx \
-    nodejs \
-    npm \
-    gettext \
-    && apt-get clean
-
-RUN npm install -g pm2
-
-WORKDIR /app
-
-## API
-COPY ./api/index.js /app/
-COPY ./api/package*.json /app/
+# Install dependencies
 RUN npm install
 
-# APP
-COPY --from=builder ./app/dist /var/www/html
+# Expose the application on port 80 (for Nginx)
+EXPOSE 80
 
-#
-COPY ./default.conf /etc/nginx/sites-available/default
-
-RUN echo "API_PORT=3000" >> /app/.env
-
-# EXPOSE ??
-
-COPY ./entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+# Start the application
+CMD ["npm", "start"]
